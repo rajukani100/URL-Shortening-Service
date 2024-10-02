@@ -18,6 +18,7 @@ func main() {
 	//handlers
 	router.HandleFunc("POST /shorten", controllers.CreateShorten)
 	router.HandleFunc("GET /shorten/{shortenCode}", controllers.RetrieveShorten)
+	router.HandleFunc("PUT /shorten/{shortenCode}", controllers.UpdateShorten)
 
 	if err := http.ListenAndServe(":80", router); err != nil {
 		fmt.Print(err)
