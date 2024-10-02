@@ -84,7 +84,6 @@ This project is a simple RESTful API for a URL shortening service. It allows use
 
 **Response**:
 - **204 No Content**: If the short URL was successfully deleted.
-- **404 Not Found**: If the short URL was not found.
 
 ### 5. Get URL Statistics
 **Method**: `GET /shorten/{shortCode}/stats`
