@@ -35,7 +35,7 @@ func CreateShorten(w http.ResponseWriter, r *http.Request) {
 	url_info := &models.URL_INFO{
 		Id:        primitive.NewObjectID(),
 		Url:       modelURL.Url,
-		Shorten:   shorten,
+		ShortCode: shorten,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Views:     0,
