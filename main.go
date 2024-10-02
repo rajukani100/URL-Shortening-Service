@@ -13,7 +13,13 @@ func main() {
 	//connect Mongo
 	database.ConnectMongoDB()
 
-	//handlers
-	http.HandleFunc("POST /shorten", controllers.CreateShorten)
+	router := http.NewServeMux()
 
+	//handlers
+	router.HandleFunc("POST /shorten", controllers.CreateShorten)
+
+	if err := http.ListenAndServe(":80", router); err != nil {
+		fmt.Print(err)
+		return
+	}
 }
