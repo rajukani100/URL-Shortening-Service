@@ -36,23 +36,25 @@ func CreateShorten(w http.ResponseWriter, r *http.Request) {
 	hash := md5.Sum([]byte(modelURL.Url))
 	shorten := hex.EncodeToString(hash[:])[:6]
 
+	//define models
 	url_info := &models.URL_INFO{
-		Id:        primitive.NewObjectID(),
 		Url:       modelURL.Url,
 		ShortCode: shorten,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Views:     0,
 	}
+	var stats models.Stats
+	stats.Id = primitive.NewObjectID()
+	stats.Url_info = *url_info
 
-	collection := database.GetUrlsCollection()
-	_, err := collection.InsertOne(context.TODO(), url_info)
+	collection := database.GetStatsCollection()
+	_, err := collection.InsertOne(context.TODO(), stats)
 	if err != nil {
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	EncodeErr := json.NewEncoder(w).Encode(url_info)
+	EncodeErr := json.NewEncoder(w).Encode(ShortenResponse(&stats))
 	if EncodeErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "error while encoding")
@@ -64,10 +66,11 @@ func RetrieveShorten(w http.ResponseWriter, r *http.Request) {
 	shortenCode := r.PathValue("shortenCode")
 
 	//define model
-	var url_info models.URL_INFO
+	var stats models.Stats
+	stats.Id = primitive.NewObjectID()
 
-	collection := database.GetUrlsCollection()
-	err := collection.FindOne(context.TODO(), bson.D{{Key: "shorten", Value: shortenCode}}).Decode(&url_info)
+	collection := database.GetStatsCollection()
+	err := collection.FindOne(context.TODO(), bson.M{"url_info.shorten": shortenCode}).Decode(&stats)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			w.WriteHeader(http.StatusNotFound)
@@ -78,9 +81,18 @@ func RetrieveShorten(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
+	// increase view
+	stats.Views = stats.Views + 1
+	_, updateErr := collection.UpdateOne(context.Background(), bson.M{"url_info.shorten": shortenCode}, bson.M{"$set": bson.M{"views": stats.Views}})
+	if updateErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, "Error while updating.")
+		return
+	}
+
 	//success
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(url_info); err != nil {
+	if err := json.NewEncoder(w).Encode(ShortenResponse(&stats)); err != nil {
 		return
 	}
 }
@@ -106,11 +118,11 @@ func UpdateShorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get MongoDB collection
-	collection := database.GetUrlsCollection()
+	collection := database.GetStatsCollection()
 
 	// Find and update the document
-	filter := bson.D{{"shorten", shortenCode}}
-	update := bson.M{"$set": bson.M{"url": modelURL.Url, "updated_at": time.Now()}}
+	filter := bson.M{"url_info.shorten": shortenCode}
+	update := bson.M{"$set": bson.M{"url_info.url": modelURL.Url, "url_info.updated_at": time.Now()}}
 
 	result, updateErr := collection.UpdateOne(context.TODO(), filter, update)
 	if updateErr != nil {
@@ -127,8 +139,8 @@ func UpdateShorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the updated document
-	var updatedURL models.URL_INFO
-	err := collection.FindOne(context.TODO(), filter).Decode(&updatedURL)
+	var updatedStats models.Stats
+	err := collection.FindOne(context.TODO(), filter).Decode(&updatedStats)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Error fetching updated document.")
@@ -137,7 +149,7 @@ func UpdateShorten(w http.ResponseWriter, r *http.Request) {
 
 	// Return the updated URL info
 	w.WriteHeader(http.StatusOK)
-	if encodeErr := json.NewEncoder(w).Encode(updatedURL); encodeErr != nil {
+	if encodeErr := json.NewEncoder(w).Encode(ShortenResponse(&updatedStats)); encodeErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Error while encoding response.")
 		return
@@ -148,12 +160,12 @@ func DeleteShorten(w http.ResponseWriter, r *http.Request) {
 	shortenCode := r.PathValue("shortenCode")
 
 	//get Mongo collection
-	collection := database.GetUrlsCollection()
+	collection := database.GetStatsCollection()
 
 	//delete document
 	_, DeleteErr := collection.DeleteOne(
 		context.TODO(),
-		bson.M{"shorten": shortenCode})
+		bson.M{"url_info.shorten": shortenCode})
 	if DeleteErr != nil {
 		if DeleteErr == mongo.ErrNoDocuments {
 			w.WriteHeader(http.StatusNotFound)
@@ -163,4 +175,28 @@ func DeleteShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func StatsShorten(w http.ResponseWriter, r *http.Request) {
+	shortenCode := r.PathValue("shortenCode")
+
+	collection := database.GetStatsCollection()
+	var FoundStats models.Stats
+	FindErr := collection.FindOne(context.TODO(), bson.M{"url_info.shorten": shortenCode}).Decode(&FoundStats)
+	if FindErr != nil {
+		if FindErr == mongo.ErrNoDocuments {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "user not found.")
+		}
+		return
+
+	}
+
+	w.WriteHeader(http.StatusOK)
+	encodeErr := json.NewEncoder(w).Encode(FoundStats)
+	if encodeErr != nil {
+		fmt.Fprint(w, "Error while encoding.")
+		return
+	}
+
 }

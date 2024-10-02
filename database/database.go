@@ -26,5 +26,5 @@ func ConnectMongoDB() {
 }
 
 func GetStatsCollection() *mongo.Collection {
-	return MongoClient.Database("URL-Shortening-Service").Collection("Stats")
+	return MongoClient.Database("URL-Shortening-Service").Collection("stats")
 }
