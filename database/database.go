@@ -25,6 +25,6 @@ func ConnectMongoDB() {
 	fmt.Println("Connected to MongoDB.")
 }
 
-func GetUrlsCollection() *mongo.Collection {
-	return MongoClient.Database("URL-Shortening-Service").Collection("URLs")
+func GetStatsCollection() *mongo.Collection {
+	return MongoClient.Database("URL-Shortening-Service").Collection("Stats")
 }
