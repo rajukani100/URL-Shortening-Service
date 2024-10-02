@@ -143,3 +143,24 @@ func UpdateShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func DeleteShorten(w http.ResponseWriter, r *http.Request) {
+	shortenCode := r.PathValue("shortenCode")
+
+	//get Mongo collection
+	collection := database.GetUrlsCollection()
+
+	//delete document
+	_, DeleteErr := collection.DeleteOne(
+		context.TODO(),
+		bson.M{"shorten": shortenCode})
+	if DeleteErr != nil {
+		if DeleteErr == mongo.ErrNoDocuments {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "404 Not found")
+			return
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
