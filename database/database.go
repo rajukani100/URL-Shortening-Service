@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -9,11 +11,16 @@ import (
 
 var MongoClient *mongo.Client
 
-func getConnection() (*mongo.Client, error) {
-	mongoClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017/"))
+func ConnectMongoDB() {
+	var err error
+	MongoClient, err = mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
-		return nil, err
+		log.Printf("error : %s", err.Error())
+		return
 	}
-	return mongoClient, nil
 
+	if err = MongoClient.Ping(context.TODO(), nil); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connected to MongoDB.")
 }
