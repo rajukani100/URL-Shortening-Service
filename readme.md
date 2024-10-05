@@ -112,7 +112,7 @@ This project is a simple RESTful API for a URL shortening service. It allows use
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/url-shortening-service.git
+    git clone https://github.com/rajukani100/URL-Shortening-Service.git
     cd url-shortening-service
     ```
 
